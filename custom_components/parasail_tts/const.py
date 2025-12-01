@@ -7,7 +7,7 @@ CONF_MODEL = "model"
 CONF_VOICE = "voice"
 
 DEFAULT_MODEL = "parasail-resemble-tts-en"
-DEFAULT_VOICE = "oai-sky"
+DEFAULT_VOICE = "oai_nova"
 DEFAULT_TEMPERATURE = 0.1
 
 PARASAIL_API_BASE = "https://api.parasail.io/v1"
@@ -19,10 +19,24 @@ PARASAIL_TTS_MODELS = [
 
 # Available voices for TTS
 PARASAIL_TTS_VOICES = [
-    "oai-sky",
+    "oai_ash",
+    "oai_coral",
+    "oai_echo",
+    "oai_fable",
+    "oai_nova",
+    "oai_onyx",
+    "oai_sage",
+    "oai_shimmer",
 ]
 
 # Voice name mapping for display purposes
 VOICE_NAMES = {
-    "oai-sky": "Sky",
+    "oai_ash": "Ash",
+    "oai_coral": "Coral",
+    "oai_echo": "Echo",
+    "oai_fable": "Fable",
+    "oai_nova": "Nova",
+    "oai_onyx": "Onyx",
+    "oai_sage": "Sage",
+    "oai_shimmer": "Shimmer",
 }

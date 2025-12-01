@@ -7,7 +7,8 @@ A Home Assistant custom integration that provides text-to-speech (TTS) capabilit
 ## Features
 
 - **High-Quality Speech Synthesis**: Uses Parasail AI's TTS models
-- **Natural Voice**: High-quality voice synthesis using OpenAI-compatible models
+- **Multiple Voice Options**: Choose from 8 distinct voices with different characteristics
+- **Natural Voices**: High-quality voice synthesis using OpenAI-compatible models
 - **Easy Configuration**: Simple setup through Home Assistant UI
 - **Privacy-Focused**: Uses Parasail AI's secure API
 - **Integration with Home Assistant**: Works seamlessly with Assist, automations, and scripts
@@ -89,9 +90,24 @@ script:
 
 - `parasail-resemble-tts-en` (Default)
   - High-quality English speech synthesis
-  - Natural-sounding voice
+  - Multiple voice options
   - Low latency
   - OpenAI-compatible API
+
+## Available Voices
+
+The integration supports 8 high-quality voice options:
+
+- **Ash** - Warm and approachable
+- **Coral** - Friendly and engaging
+- **Echo** - Clear and resonant
+- **Fable** - Expressive and storytelling
+- **Nova** - Professional and clear (Default)
+- **Onyx** - Deep and authoritative
+- **Sage** - Wise and measured
+- **Shimmer** - Bright and energetic
+
+You can change the voice at any time through the integration's options menu in Home Assistant.
 
 ## API Key
 
