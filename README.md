@@ -6,7 +6,9 @@ A Home Assistant custom integration that provides text-to-speech (TTS) capabilit
 
 ## Features
 
-- **High-Quality Speech Synthesis**: Uses Parasail AI's TTS models
+- **High-Quality Speech Synthesis**: Uses Parasail AI's Resemble TTS models
+- **100+ Voice Options**: Choose from rapid voices in multiple languages and professional character voices
+- **Emotional Variations**: Select from different emotional tones and speaking styles
 - **Easy Configuration**: Simple setup through Home Assistant UI
 - **Privacy-Focused**: Uses Parasail AI's secure API
 - **Integration with Home Assistant**: Works seamlessly with Assist, automations, and scripts
@@ -95,17 +97,36 @@ script:
 
 ## Available Voices
 
-The integration supports multiple voice options:
+The integration includes **100+ Resemble AI voices** organized into two categories:
 
-- **oai-alloy**: Neutral and balanced voice
-- **oai-echo**: Warm and friendly voice
-- **oai-fable**: Expressive and engaging voice
-- **oai-onyx**: Deep and authoritative voice
-- **oai-nova**: Clear and professional voice
-- **oai-shimmer**: Bright and energetic voice
-- **oai-sky**: Calm and soothing voice (Default)
+### Rapid Voices (50 voices)
+High-quality, low-latency voices optimized for real-time applications:
 
-You can change the voice at any time through the integration's options menu in Home Assistant.
+**English (US) - Popular Options:**
+- **Lucy** (Default) - Clear and natural
+- Claire, Meera, Fiona, Grant, Abigail, Chloe, Grace, Linda, Aaron, Jessica, Anaya, Mark, Lauren, Evelyn, Ethan, and many more
+
+**International Languages:**
+- German: Anita, Ulrich
+- Spanish: Isabel, Jota
+- Portuguese: Sofia, Diego
+- Hindi: Fatima, Dipankar
+- Arabic: Nasser, Sana
+
+### Professional Voices (54 voices)
+Character voices with emotional variations and specialized delivery:
+
+**Emotional Variations:**
+- Maureen: Available in Angry, Caring, Happy, Announcer, Sad, and Scared variants
+- Carl Bishop: Conversational, Happy, Scared
+- Tanja: Standard, Telephonic, Warm Word Weaver
+
+**Specialized Voices:**
+- Whispering voices: Willow, Willow II, William
+- Character voices: Professor Shaposhnikov, Radio Nikole, Little Ari, Little Brittle
+- Professional announcers: Vivian, Vicky, Tyler, Samantha, Robert, and more
+
+**Browse All Voices:** All 100+ voices are available in the voice selection dropdown when configuring the integration. You can change voices at any time through the integration's options menu in Home Assistant.
 
 ## API Key
 

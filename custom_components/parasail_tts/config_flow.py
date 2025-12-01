@@ -20,7 +20,7 @@ from .const import (
     DOMAIN,
     PARASAIL_API_BASE,
     PARASAIL_TTS_MODELS,
-    PARASAIL_TTS_VOICES,
+    VOICE_NAMES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -88,7 +88,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         PARASAIL_TTS_MODELS
                     ),
                     vol.Required(CONF_VOICE, default=DEFAULT_VOICE): vol.In(
-                        PARASAIL_TTS_VOICES
+                        VOICE_NAMES
                     ),
                 }
             ),
@@ -129,7 +129,7 @@ class OptionsFlow(config_entries.OptionsFlow):
             vol.Required(
                 CONF_VOICE,
                 default=options.get(CONF_VOICE, DEFAULT_VOICE),
-            ): vol.In(PARASAIL_TTS_VOICES),
+            ): vol.In(VOICE_NAMES),
         }
 
         return self.async_show_form(
