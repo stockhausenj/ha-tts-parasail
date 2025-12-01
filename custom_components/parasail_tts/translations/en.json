@@ -3,14 +3,16 @@
     "step": {
       "user": {
         "title": "Configure Parasail Text-to-Speech",
-        "description": "Enter your Parasail API credentials and model preferences.",
+        "description": "Enter your Parasail API credentials and preferences.",
         "data": {
           "api_key": "API Key",
-          "model": "Model"
+          "model": "Model",
+          "voice": "Voice"
         },
         "data_description": {
           "api_key": "Your Parasail API key from https://www.parasail.io/",
-          "model": "The TTS model to use for speech synthesis"
+          "model": "The TTS model to use for speech synthesis",
+          "voice": "The voice to use for speech generation"
         }
       }
     },
@@ -28,10 +30,12 @@
         "title": "Configure Parasail Text-to-Speech",
         "description": "Update your Parasail TTS preferences.",
         "data": {
-          "model": "Model"
+          "model": "Model",
+          "voice": "Voice"
         },
         "data_description": {
-          "model": "The TTS model to use for speech synthesis"
+          "model": "The TTS model to use for speech synthesis",
+          "voice": "The voice to use for speech generation"
         }
       }
     }

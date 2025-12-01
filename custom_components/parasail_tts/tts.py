@@ -14,7 +14,10 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     CONF_API_KEY,
     CONF_MODEL,
+    CONF_VOICE,
     DEFAULT_MODEL,
+    DEFAULT_TEMPERATURE,
+    DEFAULT_VOICE,
     DOMAIN,
     PARASAIL_API_BASE,
 )
@@ -67,6 +70,7 @@ class ParasailTTSEntity(TextToSpeechEntity):
         config = self._config_entry.options or self._config_entry.data
         api_key = self._config_entry.data[CONF_API_KEY]
         model = config.get(CONF_MODEL, DEFAULT_MODEL)
+        voice = config.get(CONF_VOICE, DEFAULT_VOICE)
 
         def _generate_speech():
             """Generate speech in executor."""
@@ -75,13 +79,19 @@ class ParasailTTSEntity(TextToSpeechEntity):
                 api_key=api_key,
             )
 
-            _LOGGER.debug("Requesting TTS: model=%s, message_length=%d", model, len(message))
+            _LOGGER.debug(
+                "Requesting TTS: model=%s, voice=%s, message_length=%d",
+                model,
+                voice,
+                len(message)
+            )
 
             # Use the audio.speech.create endpoint for TTS
             response = client.audio.speech.create(
                 model=model,
-                voice="alloy",  # Default voice, can be made configurable
+                voice=voice,
                 input=message,
+                extra_body={"temperature": DEFAULT_TEMPERATURE},
             )
 
             # The response is a streaming response, read the content

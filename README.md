@@ -36,7 +36,8 @@ A Home Assistant custom integration that provides text-to-speech (TTS) capabilit
 3. Search for "Parasail Text-to-Speech"
 4. Enter your Parasail API key (get one at https://www.parasail.io/)
 5. Select your preferred TTS model
-6. Click "Submit"
+6. Select your preferred voice
+7. Click "Submit"
 
 ## Usage
 
@@ -89,8 +90,22 @@ script:
 
 - `parasail-resemble-tts-en` (Default)
   - High-quality English speech synthesis
-  - Natural-sounding voice
+  - Natural-sounding voices
   - Low latency
+
+## Available Voices
+
+The integration supports multiple voice options:
+
+- **oai-alloy**: Neutral and balanced voice
+- **oai-echo**: Warm and friendly voice
+- **oai-fable**: Expressive and engaging voice
+- **oai-onyx**: Deep and authoritative voice
+- **oai-nova**: Clear and professional voice
+- **oai-shimmer**: Bright and energetic voice
+- **oai-sky**: Calm and soothing voice (Default)
+
+You can change the voice at any time through the integration's options menu in Home Assistant.
 
 ## API Key
 

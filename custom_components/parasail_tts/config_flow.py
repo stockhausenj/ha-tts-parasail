@@ -14,10 +14,13 @@ from homeassistant.exceptions import HomeAssistantError
 from .const import (
     CONF_API_KEY,
     CONF_MODEL,
+    CONF_VOICE,
     DEFAULT_MODEL,
+    DEFAULT_VOICE,
     DOMAIN,
     PARASAIL_API_BASE,
     PARASAIL_TTS_MODELS,
+    PARASAIL_TTS_VOICES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -36,12 +39,13 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         )
 
         # Test the API with a simple TTS request
-        chat_completion = client.chat.completions.create(
+        response = client.audio.speech.create(
             model=data.get(CONF_MODEL, DEFAULT_MODEL),
-            messages=[{"role": "user", "content": "Test."}]
+            voice=data.get(CONF_VOICE, DEFAULT_VOICE),
+            input="Test",
         )
 
-        return chat_completion.choices[0].message.content
+        return response.content
 
     try:
         # Test the API key with a simple TTS request
@@ -83,6 +87,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_MODEL, default=DEFAULT_MODEL): vol.In(
                         PARASAIL_TTS_MODELS
                     ),
+                    vol.Required(CONF_VOICE, default=DEFAULT_VOICE): vol.In(
+                        PARASAIL_TTS_VOICES
+                    ),
                 }
             ),
             errors=errors,
@@ -119,6 +126,10 @@ class OptionsFlow(config_entries.OptionsFlow):
                 CONF_MODEL,
                 default=options.get(CONF_MODEL, DEFAULT_MODEL),
             ): vol.In(PARASAIL_TTS_MODELS),
+            vol.Required(
+                CONF_VOICE,
+                default=options.get(CONF_VOICE, DEFAULT_VOICE),
+            ): vol.In(PARASAIL_TTS_VOICES),
         }
 
         return self.async_show_form(
