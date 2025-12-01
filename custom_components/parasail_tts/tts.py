@@ -87,10 +87,12 @@ class ParasailTTSEntity(TextToSpeechEntity):
             )
 
             # Use the audio.speech.create endpoint for TTS
+            # Explicitly request MP3 format to ensure compatibility with Home Assistant
             response = client.audio.speech.create(
                 model=model,
                 voice=voice,
                 input=message,
+                response_format="mp3",
                 extra_body={"temperature": DEFAULT_TEMPERATURE},
             )
 
@@ -100,6 +102,14 @@ class ParasailTTSEntity(TextToSpeechEntity):
         try:
             audio_data = await self.hass.async_add_executor_job(_generate_speech)
             _LOGGER.debug("Generated %d bytes of audio", len(audio_data))
+
+            # Detect format from magic bytes for verification
+            if audio_data[:4] == b'RIFF':
+                _LOGGER.warning(
+                    "Received WAV format from API despite requesting MP3. "
+                    "This may cause issues with Home Assistant."
+                )
+                return ("wav", audio_data)
 
             # Return the audio data as MP3 format
             return ("mp3", audio_data)
