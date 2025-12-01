@@ -1,0 +1,24 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="#346DDB" opacity="0.1"/>
+
+  <!-- Letter P -->
+  <path d="M 140 120 L 140 390 L 190 390 L 190 270 L 290 270 C 350 270 390 240 390 180 C 390 120 350 120 290 120 Z M 190 165 L 280 165 C 320 165 340 175 340 190 C 340 205 320 225 280 225 L 190 225 Z" fill="#346DDB"/>
+
+  <!-- Speaker icon with background circle - Text to Speech theme -->
+  <g transform="translate(340, 300)">
+    <!-- Background circle for speaker -->
+    <circle cx="30" cy="40" r="45" fill="#346DDB" opacity="0.15"/>
+
+    <!-- Speaker cone -->
+    <path d="M 15 30 L 15 50 L 25 50 L 35 60 L 35 20 L 25 30 Z" fill="#346DDB"/>
+
+    <!-- Sound waves (outgoing) -->
+    <path d="M 42 35 Q 45 40, 42 45" stroke="#346DDB" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+    <path d="M 47 32 Q 50 40, 47 48" stroke="#346DDB" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.5"/>
+    <path d="M 52 29 Q 55 40, 52 51" stroke="#346DDB" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.3"/>
+
+    <!-- Text indicator (small "S" to represent text-to-speech) -->
+    <text x="-5" y="45" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#346DDB" opacity="0.6">S</text>
+  </g>
+</svg>
