@@ -1,6 +1,7 @@
 """Support for Parasail text-to-speech service."""
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any
 
@@ -103,10 +104,38 @@ class ParasailTTSEntity(TextToSpeechEntity):
             audio_data = await self.hass.async_add_executor_job(_generate_speech)
             _LOGGER.debug("Generated %d bytes of audio", len(audio_data))
 
+            # Check if response is unexpectedly small (likely an error)
+            if len(audio_data) < 1000:
+                _LOGGER.warning("Received unexpectedly small response (%d bytes)", len(audio_data))
+
+                # Try to parse as JSON error response
+                try:
+                    error_data = json.loads(audio_data.decode('utf-8'))
+                    _LOGGER.error(
+                        "API returned error instead of audio: %s",
+                        json.dumps(error_data, indent=2)
+                    )
+                    return None
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    # Not JSON, continue with format detection
+                    pass
+
             # Detect actual audio format from magic bytes
             if len(audio_data) >= 4:
                 magic_bytes = audio_data[:4]
                 _LOGGER.debug("Audio magic bytes: %s", magic_bytes.hex())
+
+                # Check for JSON error response (starts with '{')
+                if magic_bytes[0] == 0x7b:  # '{'
+                    try:
+                        error_data = json.loads(audio_data.decode('utf-8'))
+                        _LOGGER.error(
+                            "API returned JSON error: %s",
+                            json.dumps(error_data, indent=2)
+                        )
+                        return None
+                    except (json.JSONDecodeError, UnicodeDecodeError):
+                        pass
 
                 # Check for WAV format (RIFF header)
                 if magic_bytes == b'RIFF':
