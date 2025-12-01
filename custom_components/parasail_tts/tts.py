@@ -103,15 +103,30 @@ class ParasailTTSEntity(TextToSpeechEntity):
             audio_data = await self.hass.async_add_executor_job(_generate_speech)
             _LOGGER.debug("Generated %d bytes of audio", len(audio_data))
 
-            # Detect format from magic bytes for verification
-            if audio_data[:4] == b'RIFF':
-                _LOGGER.warning(
-                    "Received WAV format from API despite requesting MP3. "
-                    "This may cause issues with Home Assistant."
-                )
-                return ("wav", audio_data)
+            # Detect actual audio format from magic bytes
+            if len(audio_data) >= 4:
+                magic_bytes = audio_data[:4]
+                _LOGGER.debug("Audio magic bytes: %s", magic_bytes.hex())
 
-            # Return the audio data as MP3 format
+                # Check for WAV format (RIFF header)
+                if magic_bytes == b'RIFF':
+                    _LOGGER.info("Detected WAV format from API")
+                    return ("wav", audio_data)
+
+                # Check for MP3 format (ID3 tag or MPEG sync)
+                elif magic_bytes[:3] == b'ID3' or (magic_bytes[0] == 0xFF and (magic_bytes[1] & 0xE0) == 0xE0):
+                    _LOGGER.info("Detected MP3 format from API")
+                    return ("mp3", audio_data)
+
+                # Unknown format, log warning and try MP3
+                else:
+                    _LOGGER.warning(
+                        "Unknown audio format, magic bytes: %s. Assuming MP3.",
+                        magic_bytes.hex()
+                    )
+                    return ("mp3", audio_data)
+
+            # Fallback to MP3 if we can't detect
             return ("mp3", audio_data)
         except Exception as err:
             _LOGGER.error(
