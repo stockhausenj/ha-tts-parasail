@@ -95,6 +95,7 @@ class ParasailTTSEntity(TextToSpeechEntity):
         }
 
         try:
+            audio_data = b""
             session = async_get_clientsession(self.hass)
             headers = {
                 "Content-Type": "application/json",
@@ -119,35 +120,42 @@ class ParasailTTSEntity(TextToSpeechEntity):
                 audio_chunks = []
                 chunk_count = 0
 
-                async for line in response.content:
-                    line_text = line.decode('utf-8').strip()
+                # Manually read and buffer the response to handle large SSE data lines
+                # that exceed aiohttp's default line length limit.
+                buffer = b''
+                while not response.content.at_eof():
+                    chunk = await response.content.read(4096)  # Read in chunks
+                    buffer += chunk
+                    while b'\n' in buffer:
+                        line, buffer = buffer.split(b'\n', 1)
+                        line_text = line.decode('utf-8').strip()
 
-                    # SSE events are prefixed with "data: "
-                    if line_text.startswith('data: '):
-                        json_data = line_text[6:]  # Remove "data: " prefix
+                        # SSE events are prefixed with "data: "
+                        if line_text.startswith('data: '):
+                            json_data = line_text[6:]  # Remove "data: " prefix
 
-                        try:
-                            event = json.loads(json_data)
+                            try:
+                                event = json.loads(json_data)
 
-                            # Process audio chunks
-                            if event.get('type') == 'audio' and 'audio_content' in event:
-                                # Decode base64 audio content
-                                audio_chunk = base64.b64decode(event['audio_content'])
-                                audio_chunks.append(audio_chunk)
-                                chunk_count += 1
-                                _LOGGER.debug(
-                                    "Received audio chunk %d (%d bytes)",
-                                    event.get('chunk', chunk_count),
-                                    len(audio_chunk)
-                                )
+                                # Process audio chunks
+                                if event.get('type') == 'audio' and 'audio_content' in event:
+                                    # Decode base64 audio content
+                                    audio_chunk = base64.b64decode(event['audio_content'])
+                                    audio_chunks.append(audio_chunk)
+                                    chunk_count += 1
+                                    _LOGGER.debug(
+                                        "Received audio chunk %d (%d bytes)",
+                                        event.get('chunk', chunk_count),
+                                        len(audio_chunk)
+                                    )
 
-                            elif event.get('type') == 'error':
-                                _LOGGER.error("API returned error event: %s", event)
-                                return None
+                                elif event.get('type') == 'error':
+                                    _LOGGER.error("API returned error event: %s", event)
+                                    return None
 
-                        except json.JSONDecodeError as err:
-                            _LOGGER.warning("Failed to parse SSE event JSON: %s", err)
-                            continue
+                            except json.JSONDecodeError as err:
+                                _LOGGER.warning("Failed to parse SSE event JSON: %s", err)
+                                continue
 
                 # Concatenate all audio chunks
                 if not audio_chunks:
