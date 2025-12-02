@@ -8,6 +8,6 @@
   "integration_type": "service",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/stockhausenj/ha-tts-parasail/issues",
-  "requirements": ["openai>=1.40.0"],
+  "requirements": [],
   "version": "1.0.0"
 }

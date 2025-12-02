@@ -9,8 +9,10 @@ CONF_VOICE = "voice"
 DEFAULT_MODEL = "parasail-resemble-tts-en"
 DEFAULT_VOICE = "oai_nova"
 DEFAULT_TEMPERATURE = 0.1
+DEFAULT_EXAGGERATION = 0.0
+DEFAULT_CFG_WEIGHT = 3.0
 
-PARASAIL_API_BASE = "https://api.parasail.io/v1"
+PARASAIL_API_URL = "https://voice-demo.parasail.io/api/tts-stream"
 
 # Available TTS models on Parasail
 PARASAIL_TTS_MODELS = [

@@ -1,24 +1,29 @@
 """Config flow for Parasail TTS integration."""
 from __future__ import annotations
 
+import base64
+import json
 import logging
 from typing import Any
 
-from openai import OpenAI
 import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
     CONF_API_KEY,
     CONF_MODEL,
     CONF_VOICE,
+    DEFAULT_CFG_WEIGHT,
+    DEFAULT_EXAGGERATION,
     DEFAULT_MODEL,
+    DEFAULT_TEMPERATURE,
     DEFAULT_VOICE,
     DOMAIN,
-    PARASAIL_API_BASE,
+    PARASAIL_API_URL,
     PARASAIL_TTS_MODELS,
     VOICE_NAMES,
 )
@@ -31,30 +36,74 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
 
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
     """
-    def _test_connection():
-        """Test connection to Parasail API."""
-        client = OpenAI(
-            base_url=PARASAIL_API_BASE,
-            api_key=data[CONF_API_KEY],
-        )
+    # Test the API with a simple TTS request
+    session = async_get_clientsession(hass)
 
-        # Test the API with a simple TTS request
-        response = client.audio.speech.create(
-            model=data.get(CONF_MODEL, DEFAULT_MODEL),
-            voice=data.get(CONF_VOICE, DEFAULT_VOICE),
-            input="Test",
-        )
+    payload = {
+        "temperature": DEFAULT_TEMPERATURE,
+        "text": "Test",
+        "voice": data.get(CONF_VOICE, DEFAULT_VOICE),
+        "exaggeration": DEFAULT_EXAGGERATION,
+        "cfg_weight": DEFAULT_CFG_WEIGHT,
+    }
 
-        return response.content
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {data[CONF_API_KEY]}",
+    }
 
     try:
-        # Test the API key with a simple TTS request
-        await hass.async_add_executor_job(_test_connection)
+        async with session.post(
+            PARASAIL_API_URL,
+            json=payload,
+            headers=headers,
+            timeout=10,
+        ) as response:
+            if response.status != 200:
+                error_text = await response.text()
+                _LOGGER.error("API validation failed: %s", error_text)
+                raise InvalidAuth
+
+            # Parse Server-Sent Events (SSE) streaming response to validate
+            audio_received = False
+
+            async for line in response.content:
+                line_text = line.decode('utf-8').strip()
+
+                # SSE events are prefixed with "data: "
+                if line_text.startswith('data: '):
+                    json_data = line_text[6:]  # Remove "data: " prefix
+
+                    try:
+                        event = json.loads(json_data)
+
+                        # Check if we received valid audio data
+                        if event.get('type') == 'audio' and 'audio_content' in event:
+                            # Validate that audio_content is valid base64
+                            base64.b64decode(event['audio_content'])
+                            audio_received = True
+                            # We only need to validate one chunk
+                            break
+
+                        elif event.get('type') == 'error':
+                            _LOGGER.error("API returned error during validation: %s", event)
+                            raise InvalidAuth
+
+                    except (json.JSONDecodeError, base64.binascii.Error) as err:
+                        _LOGGER.error("Failed to parse or decode API response: %s", err)
+                        raise InvalidAuth from err
+
+            if not audio_received:
+                _LOGGER.error("No valid audio data received from API")
+                raise InvalidAuth
+
+    except InvalidAuth:
+        raise
     except Exception as err:
         _LOGGER.error("Failed to connect to Parasail API: %s", err)
         raise InvalidAuth from err
 
-    return {"title": f"Parasail TTS ({data.get(CONF_MODEL, DEFAULT_MODEL)})"}
+    return {"title": f"Parasail TTS ({data.get(CONF_VOICE, DEFAULT_VOICE)})"}
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):

@@ -1,26 +1,28 @@
 """Support for Parasail text-to-speech service."""
 from __future__ import annotations
 
+import base64
 import json
 import logging
 from typing import Any
 
-from openai import OpenAI
-
 from homeassistant.components.tts import TextToSpeechEntity, TtsAudioType
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     CONF_API_KEY,
     CONF_MODEL,
     CONF_VOICE,
+    DEFAULT_CFG_WEIGHT,
+    DEFAULT_EXAGGERATION,
     DEFAULT_MODEL,
     DEFAULT_TEMPERATURE,
     DEFAULT_VOICE,
     DOMAIN,
-    PARASAIL_API_BASE,
+    PARASAIL_API_URL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -70,72 +72,98 @@ class ParasailTTSEntity(TextToSpeechEntity):
         # Get configuration
         config = self._config_entry.options or self._config_entry.data
         api_key = self._config_entry.data[CONF_API_KEY]
-        model = config.get(CONF_MODEL, DEFAULT_MODEL)
         voice = config.get(CONF_VOICE, DEFAULT_VOICE)
 
-        def _generate_speech():
-            """Generate speech in executor."""
-            client = OpenAI(
-                base_url=PARASAIL_API_BASE,
-                api_key=api_key,
-            )
+        _LOGGER.debug(
+            "Requesting TTS: voice=%s, message_length=%d, temperature=%s, exaggeration=%s, cfg_weight=%s",
+            voice,
+            len(message),
+            DEFAULT_TEMPERATURE,
+            DEFAULT_EXAGGERATION,
+            DEFAULT_CFG_WEIGHT
+        )
 
-            _LOGGER.debug(
-                "Requesting TTS: model=%s, voice=%s, message_length=%d",
-                model,
-                voice,
-                len(message)
-            )
-
-            # Use the audio.speech.create endpoint for TTS
-            # Explicitly request MP3 format to ensure compatibility with Home Assistant
-            response = client.audio.speech.create(
-                model=model,
-                voice=voice,
-                input=message,
-                response_format="mp3",
-                extra_body={"temperature": DEFAULT_TEMPERATURE},
-            )
-
-            # The response is a streaming response, read the content
-            return response.content
+        # Prepare request payload
+        payload = {
+            "temperature": DEFAULT_TEMPERATURE,
+            "text": message,
+            "voice": voice,
+            "exaggeration": DEFAULT_EXAGGERATION,
+            "cfg_weight": DEFAULT_CFG_WEIGHT,
+        }
 
         try:
-            audio_data = await self.hass.async_add_executor_job(_generate_speech)
-            _LOGGER.debug("Generated %d bytes of audio", len(audio_data))
+            session = async_get_clientsession(self.hass)
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            }
 
-            # Check if response is unexpectedly small (likely an error)
-            if len(audio_data) < 1000:
-                _LOGGER.warning("Received unexpectedly small response (%d bytes)", len(audio_data))
-
-                # Try to parse as JSON error response
-                try:
-                    error_data = json.loads(audio_data.decode('utf-8'))
+            async with session.post(
+                PARASAIL_API_URL,
+                json=payload,
+                headers=headers,
+                timeout=30,
+            ) as response:
+                if response.status != 200:
+                    error_text = await response.text()
                     _LOGGER.error(
-                        "API returned error instead of audio: %s",
-                        json.dumps(error_data, indent=2)
+                        "API request failed with status %d: %s",
+                        response.status,
+                        error_text
                     )
                     return None
-                except (json.JSONDecodeError, UnicodeDecodeError):
-                    # Not JSON, continue with format detection
-                    pass
 
-            # Detect actual audio format from magic bytes
+                # Parse Server-Sent Events (SSE) streaming response
+                audio_chunks = []
+                chunk_count = 0
+
+                async for line in response.content:
+                    line_text = line.decode('utf-8').strip()
+
+                    # SSE events are prefixed with "data: "
+                    if line_text.startswith('data: '):
+                        json_data = line_text[6:]  # Remove "data: " prefix
+
+                        try:
+                            event = json.loads(json_data)
+
+                            # Process audio chunks
+                            if event.get('type') == 'audio' and 'audio_content' in event:
+                                # Decode base64 audio content
+                                audio_chunk = base64.b64decode(event['audio_content'])
+                                audio_chunks.append(audio_chunk)
+                                chunk_count += 1
+                                _LOGGER.debug(
+                                    "Received audio chunk %d (%d bytes)",
+                                    event.get('chunk', chunk_count),
+                                    len(audio_chunk)
+                                )
+
+                            elif event.get('type') == 'error':
+                                _LOGGER.error("API returned error event: %s", event)
+                                return None
+
+                        except json.JSONDecodeError as err:
+                            _LOGGER.warning("Failed to parse SSE event JSON: %s", err)
+                            continue
+
+                # Concatenate all audio chunks
+                if not audio_chunks:
+                    _LOGGER.error("No audio chunks received from API")
+                    return None
+
+                audio_data = b''.join(audio_chunks)
+                _LOGGER.info(
+                    "Generated %d bytes of audio from %d chunks",
+                    len(audio_data),
+                    chunk_count
+                )
+
+            # Detect audio format from magic bytes
             if len(audio_data) >= 4:
                 magic_bytes = audio_data[:4]
                 _LOGGER.debug("Audio magic bytes: %s", magic_bytes.hex())
-
-                # Check for JSON error response (starts with '{')
-                if magic_bytes[0] == 0x7b:  # '{'
-                    try:
-                        error_data = json.loads(audio_data.decode('utf-8'))
-                        _LOGGER.error(
-                            "API returned JSON error: %s",
-                            json.dumps(error_data, indent=2)
-                        )
-                        return None
-                    except (json.JSONDecodeError, UnicodeDecodeError):
-                        pass
 
                 # Check for WAV format (RIFF header)
                 if magic_bytes == b'RIFF':
@@ -147,21 +175,21 @@ class ParasailTTSEntity(TextToSpeechEntity):
                     _LOGGER.info("Detected MP3 format from API")
                     return ("mp3", audio_data)
 
-                # Unknown format, log warning and try MP3
+                # Unknown format, log warning and assume WAV (since API returns WAV)
                 else:
                     _LOGGER.warning(
-                        "Unknown audio format, magic bytes: %s. Assuming MP3.",
+                        "Unknown audio format, magic bytes: %s. Assuming WAV.",
                         magic_bytes.hex()
                     )
-                    return ("mp3", audio_data)
+                    return ("wav", audio_data)
 
-            # Fallback to MP3 if we can't detect
-            return ("mp3", audio_data)
+            # Fallback to WAV
+            return ("wav", audio_data)
         except Exception as err:
             _LOGGER.error(
-                "Error during TTS generation: %s (model=%s, message_length=%d)",
+                "Error during TTS generation: %s (voice=%s, message_length=%d)",
                 err,
-                model,
+                voice,
                 len(message),
                 exc_info=True
             )
