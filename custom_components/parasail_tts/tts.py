@@ -13,8 +13,9 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
-    CONF_API_KEY,
+    CONF_EXAGGERATION,
     CONF_MODEL,
+    CONF_TEMPERATURE,
     CONF_VOICE,
     DEFAULT_CFG_WEIGHT,
     DEFAULT_EXAGGERATION,
@@ -71,24 +72,25 @@ class ParasailTTSEntity(TextToSpeechEntity):
 
         # Get configuration
         config = self._config_entry.options or self._config_entry.data
-        api_key = self._config_entry.data[CONF_API_KEY]
         voice = config.get(CONF_VOICE, DEFAULT_VOICE)
+        temperature = config.get(CONF_TEMPERATURE, DEFAULT_TEMPERATURE)
+        exaggeration = config.get(CONF_EXAGGERATION, DEFAULT_EXAGGERATION)
 
         _LOGGER.debug(
             "Requesting TTS: voice=%s, message_length=%d, temperature=%s, exaggeration=%s, cfg_weight=%s",
             voice,
             len(message),
-            DEFAULT_TEMPERATURE,
-            DEFAULT_EXAGGERATION,
+            temperature,
+            exaggeration,
             DEFAULT_CFG_WEIGHT
         )
 
         # Prepare request payload
         payload = {
-            "temperature": DEFAULT_TEMPERATURE,
+            "temperature": temperature,
             "text": message,
             "voice": voice,
-            "exaggeration": DEFAULT_EXAGGERATION,
+            "exaggeration": exaggeration,
             "cfg_weight": DEFAULT_CFG_WEIGHT,
         }
 
@@ -96,7 +98,6 @@ class ParasailTTSEntity(TextToSpeechEntity):
             session = async_get_clientsession(self.hass)
             headers = {
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}",
             }
 
             async with session.post(

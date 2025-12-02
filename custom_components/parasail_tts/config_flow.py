@@ -14,8 +14,9 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
-    CONF_API_KEY,
+    CONF_EXAGGERATION,
     CONF_MODEL,
+    CONF_TEMPERATURE,
     CONF_VOICE,
     DEFAULT_CFG_WEIGHT,
     DEFAULT_EXAGGERATION,
@@ -24,7 +25,6 @@ from .const import (
     DEFAULT_VOICE,
     DOMAIN,
     PARASAIL_API_URL,
-    PARASAIL_TTS_MODELS,
     VOICE_NAMES,
 )
 
@@ -40,16 +40,15 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     session = async_get_clientsession(hass)
 
     payload = {
-        "temperature": DEFAULT_TEMPERATURE,
+        "temperature": data.get(CONF_TEMPERATURE, DEFAULT_TEMPERATURE),
         "text": "Test",
         "voice": data.get(CONF_VOICE, DEFAULT_VOICE),
-        "exaggeration": DEFAULT_EXAGGERATION,
+        "exaggeration": data.get(CONF_EXAGGERATION, DEFAULT_EXAGGERATION),
         "cfg_weight": DEFAULT_CFG_WEIGHT,
     }
 
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {data[CONF_API_KEY]}",
     }
 
     try:
@@ -126,18 +125,22 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
+                # Add default model to the data
+                user_input[CONF_MODEL] = DEFAULT_MODEL
                 return self.async_create_entry(title=info["title"], data=user_input)
 
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_API_KEY): str,
-                    vol.Required(CONF_MODEL, default=DEFAULT_MODEL): vol.In(
-                        PARASAIL_TTS_MODELS
-                    ),
                     vol.Required(CONF_VOICE, default=DEFAULT_VOICE): vol.In(
                         VOICE_NAMES
+                    ),
+                    vol.Optional(CONF_TEMPERATURE, default=DEFAULT_TEMPERATURE): vol.All(
+                        vol.Coerce(float), vol.Range(min=0.0, max=1.0)
+                    ),
+                    vol.Optional(CONF_EXAGGERATION, default=DEFAULT_EXAGGERATION): vol.All(
+                        vol.Coerce(float), vol.Range(min=0.0, max=1.0)
                     ),
                 }
             ),
@@ -172,13 +175,17 @@ class OptionsFlow(config_entries.OptionsFlow):
 
         schema_dict = {
             vol.Required(
-                CONF_MODEL,
-                default=options.get(CONF_MODEL, DEFAULT_MODEL),
-            ): vol.In(PARASAIL_TTS_MODELS),
-            vol.Required(
                 CONF_VOICE,
                 default=options.get(CONF_VOICE, DEFAULT_VOICE),
             ): vol.In(VOICE_NAMES),
+            vol.Optional(
+                CONF_TEMPERATURE,
+                default=options.get(CONF_TEMPERATURE, DEFAULT_TEMPERATURE),
+            ): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=1.0)),
+            vol.Optional(
+                CONF_EXAGGERATION,
+                default=options.get(CONF_EXAGGERATION, DEFAULT_EXAGGERATION),
+            ): vol.All(vol.Coerce(float), vol.Range(min=0.0, max=1.0)),
         }
 
         return self.async_show_form(

@@ -2,9 +2,10 @@
 
 DOMAIN = "parasail_tts"
 
-CONF_API_KEY = "api_key"
 CONF_MODEL = "model"
 CONF_VOICE = "voice"
+CONF_TEMPERATURE = "temperature"
+CONF_EXAGGERATION = "exaggeration"
 
 DEFAULT_MODEL = "parasail-resemble-tts-en"
 DEFAULT_VOICE = "oai_nova"

@@ -3,21 +3,21 @@
     "step": {
       "user": {
         "title": "Configure Parasail Text-to-Speech",
-        "description": "Enter your Parasail API credentials and preferences.",
+        "description": "Select your voice and speech parameters.",
         "data": {
-          "api_key": "API Key",
-          "model": "Model",
-          "voice": "Voice"
+          "voice": "Voice",
+          "temperature": "Temperature",
+          "exaggeration": "Exaggeration"
         },
         "data_description": {
-          "api_key": "Your Parasail API key from https://www.parasail.io/",
-          "model": "The TTS model to use for speech synthesis",
-          "voice": "The voice to use for speech generation"
+          "voice": "The voice to use for speech generation",
+          "temperature": "Controls randomness in speech generation (0.0-1.0)",
+          "exaggeration": "Controls expressiveness in speech (0.0-1.0)"
         }
       }
     },
     "error": {
-      "invalid_auth": "Invalid API key. Please check your credentials.",
+      "invalid_auth": "Failed to connect to Parasail API. Please check your network connection.",
       "unknown": "An unexpected error occurred. Please try again."
     },
     "abort": {
@@ -28,14 +28,16 @@
     "step": {
       "init": {
         "title": "Configure Parasail Text-to-Speech",
-        "description": "Update your Parasail TTS preferences.",
+        "description": "Update your voice and speech parameters.",
         "data": {
-          "model": "Model",
-          "voice": "Voice"
+          "voice": "Voice",
+          "temperature": "Temperature",
+          "exaggeration": "Exaggeration"
         },
         "data_description": {
-          "model": "The TTS model to use for speech synthesis",
-          "voice": "The voice to use for speech generation"
+          "voice": "The voice to use for speech generation",
+          "temperature": "Controls randomness in speech generation (0.0-1.0)",
+          "exaggeration": "Controls expressiveness in speech (0.0-1.0)"
         }
       }
     }
